@@ -1,0 +1,129 @@
+<?php
+
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\GuzzleException;
+
+abstract class AbstractRequest
+{
+    private $files = [];
+    private $params = [];
+    private $httpMethod;
+
+    protected $options = [];
+    protected const DEFAULT_CONTROLLER = 'clubemantle';
+
+    protected function get()
+    {
+        $this->httpMethod = 'GET';
+
+        return $this;
+    }
+
+    private function setQueryString(): void
+    {
+        $this->options['query'] = $this->params;
+    }
+
+    protected function post()
+    {
+        $this->httpMethod = 'POST';
+
+        return $this;
+    }
+
+    private function setPostParams(): void
+    {
+        if (empty($this->files)) {
+            $this->options['form_params'] = $this->params;
+
+            return;
+        }
+
+        $params = [];
+        foreach ($this->params as $key => $value) {
+            $params[] = [
+                'name' => $key,
+                'contents' => $value,
+            ];
+        }
+
+        $this->options['multipart'] = array_merge($params, $this->files);
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function getHttpMethod()
+    {
+        if (empty($this->httpMethod)) {
+            throw new Exception('Método HTTP inválido.');
+        }
+
+        return $this->httpMethod;
+    }
+
+    protected function addParams(array $params)
+    {
+        foreach ($params as $key => $value) {
+            $this->params[$key] = $value;
+        }
+
+        return $this;
+    }
+
+    protected function addFiles(array $files)
+    {
+        foreach ($files as $file) {
+            $this->files[] = [
+                'Content-type' => 'multipart/form-data',
+                'name' => $file->getClientOriginalName(),
+                'contents' => file_get_contents($file->getRealPath()),
+                'filename' => $file->getClientOriginalName(),
+            ];
+        }
+
+        return $this;
+    }
+
+    protected function setDataOptions(): void
+    {
+        $methods = [
+            'GET' => 'setQueryString',
+            'POST' => 'setPostParams',
+        ];
+
+        $methodToExecute = $methods[$this->getHttpMethod()];
+        $this->$methodToExecute();
+    }
+
+    private function getOptions(): array
+    {
+        $this->setDataOptions();
+
+        return $this->options;
+    }
+
+    /**
+     * @throws GuzzleException
+     * @throws Exception
+     */
+    public function execute($path)
+    {
+        $requestUrl = self::DEFAULT_CONTROLLER . $path;
+
+        $client = new Client(['base_uri' => config('northintegration.api_base_url')]);
+        $response = $client->request($this->getHttpMethod(), $requestUrl, $this->getOptions());
+
+        $statusCode = $response->getStatusCode();
+        if (!in_array($statusCode, [200, 201])) {
+            throw new Exception('Erro na requisição.', $statusCode);
+        }
+
+        $decodedResponse = json_decode($response->getBody()->getContents());
+        if (isset($decodedResponse->error) && $decodedResponse->error) {
+            throw new Exception($decodedResponse->message);
+        }
+
+        return $decodedResponse;
+    }
+}
