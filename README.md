@@ -1,2 +1,2 @@
-# abstract-php-request
-Abstract classe to PHP request extending Guzzle (guzzle/guzzle)
+# Abstract PHP Request
+Abstract class extending Guzzle (guzzle/guzzle) to make requests in PHP.
