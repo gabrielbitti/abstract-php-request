@@ -1,0 +1,26 @@
+<?php
+
+namespace src;
+
+class HowUseIt extends AbstractRequest
+{
+    public function getRequestExample()
+    {
+        return $this->get()->execute('/orders');
+    }
+
+    public function postRequestExample(int $id, array $files)
+    {
+        return $this->post()->addFiles($files)->execute("/orders/files/$id");
+    }
+
+    public function putRequestExample(int $itemId, $params)
+    {
+        return $this->put()->addParams($params)->execute("/orders/item/$itemId");
+    }
+
+    public function deleteRequestExample(int $id, array $files)
+    {
+        return $this->delete()->execute("/orders/$id/remove");
+    }
+}

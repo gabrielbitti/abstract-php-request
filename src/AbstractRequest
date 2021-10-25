@@ -1,5 +1,8 @@
 <?php
 
+namespace src;
+
+use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 
@@ -8,6 +11,8 @@ abstract class AbstractRequest
     private $files = [];
     private $params = [];
     private $httpMethod;
+
+    protected const BASE_URL = 'http://localhost/api';
 
     protected $options = [];
     protected const DEFAULT_CONTROLLER = 'clubemantle';
@@ -27,6 +32,20 @@ abstract class AbstractRequest
     protected function post()
     {
         $this->httpMethod = 'POST';
+
+        return $this;
+    }
+
+    protected function put()
+    {
+        $this->httpMethod = 'PUT';
+
+        return $this;
+    }
+
+    protected function delete()
+    {
+        $this->httpMethod = 'DELETE';
 
         return $this;
     }
@@ -107,11 +126,9 @@ abstract class AbstractRequest
      * @throws GuzzleException
      * @throws Exception
      */
-    public function execute($path)
+    public function execute($requestUrl)
     {
-        $requestUrl = self::DEFAULT_CONTROLLER . $path;
-
-        $client = new Client(['base_uri' => config('northintegration.api_base_url')]);
+        $client = new Client(['base_uri' => self::BASE_URL]);
         $response = $client->request($this->getHttpMethod(), $requestUrl, $this->getOptions());
 
         $statusCode = $response->getStatusCode();
